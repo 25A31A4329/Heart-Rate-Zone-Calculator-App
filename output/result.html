@@ -1,0 +1,387 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+
+<title>❤️ AI Heart Monitor</title>
+
+<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+
+<link rel="stylesheet" href="style.css">
+
+</head>
+
+<body>
+
+<canvas id="particles"></canvas>
+
+<div class="card">
+
+<div class="shine"></div>
+
+<div class="header">
+❤️ AI Heart Monitor
+</div>
+
+<div class="heart-container">
+
+<div class="ripple" id="ripple"></div>
+
+<div class="heart">
+❤️
+</div>
+
+</div>
+
+<div class="info" id="info"></div>
+
+<div class="zone" id="zoneText"></div>
+
+<div class="suggestion" id="aiTip"></div>
+
+<input type="range"
+min="50"
+max="100"
+value="50"
+id="intensity"
+class="slider">
+
+<div class="audio-wave">
+
+<div class="bar b1"></div>
+<div class="bar b2"></div>
+<div class="bar b3"></div>
+<div class="bar b4"></div>
+<div class="bar b5"></div>
+<div class="bar b6"></div>
+<div class="bar b7"></div>
+<div class="bar b8"></div>
+<div class="bar b9"></div>
+<div class="bar b10"></div>
+
+</div>
+
+<div class="graph-wrap">
+<canvas id="chart"></canvas>
+</div>
+
+</div>
+
+<script>
+
+const intensity = document.getElementById("intensity");
+const info = document.getElementById("info");
+const zoneText = document.getElementById("zoneText");
+const aiTip = document.getElementById("aiTip");
+const ripple = document.getElementById("ripple");
+
+let age = 20;
+let maxHR = 220 - age;
+let soundEnabled = false;
+
+info.innerHTML =
+` Age: <span class="value">${age}</span>
+| Max:
+<span class="value">${maxHR}</span> `;
+
+function getZone(p){
+
+if(p < 60)
+return [
+"Fat Burn",
+"#00ffcc",
+"🔥 Fat burning mode"
+];
+
+if(p < 70)
+return [
+"Fitness",
+"#00ccff",
+"⚡ Improve stamina"
+];
+
+if(p < 80)
+return [
+"Cardio",
+"#ffaa00",
+"💪 Build endurance"
+];
+
+if(p < 90)
+return [
+"Peak",
+"#ff6600",
+"🚀 High intensity"
+];
+
+return [
+"Danger",
+"#ff0000",
+"⚠️ Reduce intensity"
+];
+
+}
+
+const ctx =
+document.getElementById("chart")
+.getContext("2d");
+
+let bpmLine = Array(20).fill(145);
+
+const chart = new Chart(ctx,{
+
+type:"line",
+
+data:{
+
+labels:Array(20).fill(""),
+
+datasets:[{
+
+data:bpmLine,
+
+borderColor:"#00ffe5",
+backgroundColor:"#00ffe5",
+
+borderWidth:3,
+
+pointRadius:2,
+pointHoverRadius:2,
+
+pointBackgroundColor:"#00ffe5",
+pointBorderColor:"#00ffe5",
+
+pointBorderWidth:1,
+
+tension:0.35
+
+}]
+
+},
+
+options:{
+
+responsive:true,
+maintainAspectRatio:false,
+animation:false,
+
+plugins:{
+legend:{display:false}
+},
+
+scales:{
+
+x:{
+grid:{
+color:"rgba(255,255,255,0.08)"
+},
+ticks:{
+display:false
+}
+},
+
+y:{
+
+min:80,
+max:200,
+
+grid:{
+color:"rgba(255,255,255,0.08)"
+},
+
+ticks:{
+color:"#ffffff"
+}
+
+}
+
+}
+
+}
+
+});
+
+function updateGraph(bpm){
+
+bpmLine.push(bpm);
+bpmLine.shift();
+
+chart.update();
+
+}
+
+let audioCtx = null;
+
+function heartbeatSound(){
+
+if(!soundEnabled) return;
+
+if(!audioCtx){
+
+audioCtx =
+new(window.AudioContext ||
+window.webkitAudioContext)();
+
+}
+
+const master =
+audioCtx.createGain();
+
+master.connect(audioCtx.destination);
+
+master.gain.value = 0.65;
+
+const osc1 =
+audioCtx.createOscillator();
+
+const gain1 =
+audioCtx.createGain();
+
+osc1.type = "sine";
+
+osc1.frequency.setValueAtTime(
+55,
+audioCtx.currentTime
+);
+
+osc1.connect(gain1);
+
+gain1.connect(master);
+
+gain1.gain.setValueAtTime(
+0.35,
+audioCtx.currentTime
+);
+
+gain1.gain.exponentialRampToValueAtTime(
+0.001,
+audioCtx.currentTime + 0.12
+);
+
+osc1.start();
+
+osc1.stop(
+audioCtx.currentTime + 0.12
+);
+
+}
+
+const pc =
+document.getElementById("particles");
+
+const pctx =
+pc.getContext("2d");
+
+function resizeCanvas(){
+
+pc.width = innerWidth;
+pc.height = innerHeight;
+
+}
+
+resizeCanvas();
+
+window.addEventListener(
+"resize",
+resizeCanvas
+);
+
+let stars = [];
+
+for(let i=0;i<120;i++){
+
+stars.push({
+
+x:Math.random()*pc.width,
+y:Math.random()*pc.height,
+s:Math.random()*2
+
+});
+
+}
+
+function animateParticles(){
+
+pctx.clearRect(
+0,
+0,
+pc.width,
+pc.height
+);
+
+stars.forEach(p=>{
+
+p.y += 0.4;
+
+if(p.y > pc.height){
+p.y = 0;
+}
+
+pctx.fillStyle = "#00ffcc";
+
+pctx.fillRect(
+p.x,
+p.y,
+p.s,
+p.s
+);
+
+});
+
+requestAnimationFrame(
+animateParticles
+);
+
+}
+
+animateParticles();
+
+function updateMonitor(){
+
+let p =
+parseInt(intensity.value);
+
+soundEnabled = p > 50;
+
+let bpm =
+Math.round(maxHR * p / 100);
+
+let [zone,color,tip] =
+getZone(p);
+
+zoneText.innerHTML =
+`${zone} (${bpm} BPM)`;
+
+zoneText.style.color = color;
+
+aiTip.innerHTML = tip;
+
+let dur = 60 / bpm;
+
+ripple.style.animation =
+`ripple ${dur}s infinite`;
+
+heartbeatSound();
+
+updateGraph(bpm);
+
+}
+
+intensity.addEventListener(
+"input",
+updateMonitor
+);
+
+setInterval(
+updateMonitor,
+700
+);
+
+updateMonitor();
+
+</script>
+
+</body>
+</html>
